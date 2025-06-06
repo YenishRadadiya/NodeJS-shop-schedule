@@ -1,3 +1,3 @@
-import { getShopStatus } from './shopStatus';
+import { getShopStatus } from './shopstatus';
 
 console.log(getShopStatus());
