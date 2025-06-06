@@ -24,10 +24,17 @@ export function getShopStatus(): string {
     // Shop is closed: find next open time
     const nextOpenInfo = findNextOpenTime(dayIndex, currentMinutes);
     if (nextOpenInfo) {
-        const { daysUntil, minutesUntil } = nextOpenInfo;
-        const totalHours = (daysUntil * 24) + (minutesUntil / 60);
-        const hoursFormatted = totalHours.toFixed(2);
-        return `Closed. The shop will be open after ${hoursFormatted} Hrs`;
+        const { totalMinutes } = nextOpenInfo;
+        if (totalMinutes < 24 * 60) {
+            // less than a day
+            const hours = (totalMinutes / 60).toFixed(2);
+            return `Shop is Currently Closed. and it will be open after ${hours} Hrs`;
+        } else {
+            // more than a day
+            const days = Math.floor(totalMinutes / (24 * 60));
+            const hours = ((totalMinutes % (24 * 60)) / 60).toFixed(2);
+            return `Shop is Currently Closed. and it will be open after ${days} Day${days > 1 ? 's' : ''} and ${hours} Hrs`;
+        }
     }
 
     return 'Closed'; // fallback
@@ -43,8 +50,7 @@ function timeToMinutes(timeStr: string): number {
     return hours * 60 + minutes;
 }
 
-function findNextOpenTime(currentDayIndex: number, currentMinutes: number): { daysUntil: number; minutesUntil: number } | null {
-    // Check next 7 days for shop open
+function findNextOpenTime(currentDayIndex: number, currentMinutes: number): { totalMinutes: number } | null {
     for (let offset = 0; offset < 7; offset++) {
         const checkDayIndex = (currentDayIndex + offset) % 7;
         const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][checkDayIndex];
@@ -53,17 +59,12 @@ function findNextOpenTime(currentDayIndex: number, currentMinutes: number): { da
 
         const openMinutes = timeToMinutes(schedule.open);
         if (offset === 0 && openMinutes <= currentMinutes) {
-            // If today but open time already passed, ignore today
             continue;
         }
 
-        // Found next open day
-        const daysUntil = offset;
-        let minutesUntil = openMinutes - currentMinutes;
-        if (offset > 0) {
-            minutesUntil = openMinutes + (24 * 60 * offset) - currentMinutes;
-        }
-        return { daysUntil, minutesUntil };
+        // Calculate total minutes until next open
+        const totalMinutes = openMinutes + offset * 24 * 60 - currentMinutes;
+        return { totalMinutes };
     }
-    return null; // No schedule found in next 7 days
+    return null;
 }
